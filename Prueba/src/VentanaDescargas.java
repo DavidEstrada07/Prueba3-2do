@@ -26,6 +26,10 @@ public class VentanaDescargas extends JFrame {
 
     private ArrayList<Descarga> descargas;
 
+    private ContadorDescargas contador;
+
+    private int hilosFinalizados;
+
     public VentanaDescargas() {
 
         setTitle("Descarga Múltiple");
@@ -34,6 +38,7 @@ public class VentanaDescargas extends JFrame {
         setLocationRelativeTo(null);
 
         descargas = new ArrayList<Descarga>();
+        contador = new ContadorDescargas();
 
         crearComponentes();
     }
@@ -73,6 +78,13 @@ public class VentanaDescargas extends JFrame {
             }
         });
 
+        botonCancelar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                cancelarDescargas();
+            }
+        });
+
         JPanel panelBotones = new JPanel();
 
         panelBotones.add(botonIniciar);
@@ -97,19 +109,33 @@ public class VentanaDescargas extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
+
                 bitacora.append(mensaje + "\n");
+
+                bitacora.setCaretPosition(
+                        bitacora.getDocument().getLength()
+                );
             }
         });
+    }
+
+    private void cambiarEstadoBotones(boolean enCurso) {
+
+        botonIniciar.setEnabled(!enCurso);
+        botonCancelar.setEnabled(enCurso);
     }
 
     private void iniciarDescargas() {
 
         descargas.clear();
 
+        contador.reiniciar();
+
+        hilosFinalizados = 0;
+
         bitacora.setText("");
 
-        botonIniciar.setEnabled(false);
-        botonCancelar.setEnabled(true);
+        cambiarEstadoBotones(true);
 
         for (int i = 0; i < TOTAL_ARCHIVOS; i++) {
 
@@ -122,11 +148,62 @@ public class VentanaDescargas extends JFrame {
             );
 
             descargas.add(descarga);
-
-            Thread hilo = new Thread(descarga);
-            hilo.start();
         }
 
         agregarMensaje("Descargas iniciadas");
+
+        for (Descarga descarga : descargas) {
+
+            Thread hilo = new Thread(descarga);
+
+            hilo.start();
+        }
+    }
+
+    private void cancelarDescargas() {
+
+        for (Descarga descarga : descargas) {
+            descarga.cancelar();
+        }
+
+        agregarMensaje("Cancelando descargas...");
+
+        botonCancelar.setEnabled(false);
+    }
+
+    public synchronized void avisarDescargaCompletada() {
+
+        int completadas = contador.registrarCompletada();
+
+        hilosFinalizados++;
+
+        if (completadas == TOTAL_ARCHIVOS) {
+
+            agregarMensaje(
+                    "Todas las descargas han finalizado."
+            );
+        }
+
+        verificarFinalizacion();
+    }
+
+    public synchronized void avisarDescargaCancelada() {
+
+        hilosFinalizados++;
+
+        verificarFinalizacion();
+    }
+
+    private void verificarFinalizacion() {
+
+        if (hilosFinalizados == TOTAL_ARCHIVOS) {
+
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    cambiarEstadoBotones(false);
+                }
+            });
+        }
     }
 }

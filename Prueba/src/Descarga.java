@@ -9,14 +9,22 @@ public class Descarga implements Runnable {
     private VentanaDescargas ventana;
     private int pausa;
 
+    private volatile boolean cancelado;
+
     public Descarga(String nombre, JProgressBar barra, VentanaDescargas ventana) {
 
         this.nombre = nombre;
         this.barra = barra;
         this.ventana = ventana;
 
+        cancelado = false;
+
         Random random = new Random();
         pausa = 50 + random.nextInt(151);
+    }
+
+    public void cancelar() {
+        cancelado = true;
     }
 
     private void actualizarBarra(final int progreso) {
@@ -39,6 +47,12 @@ public class Descarga implements Runnable {
             try {
                 Thread.sleep(pausa);
             } catch (InterruptedException e) {
+                cancelado = true;
+            }
+
+            if (cancelado) {
+                ventana.agregarMensaje(nombre + ": descarga cancelada");
+                ventana.avisarDescargaCancelada();
                 return;
             }
 
@@ -54,5 +68,6 @@ public class Descarga implements Runnable {
         }
 
         ventana.agregarMensaje(nombre + ": descarga completada");
+        ventana.avisarDescargaCompletada();
     }
 }
