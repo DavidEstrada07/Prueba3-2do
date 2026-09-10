@@ -1,5 +1,8 @@
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -8,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 public class VentanaDescargas extends JFrame {
 
@@ -20,12 +24,16 @@ public class VentanaDescargas extends JFrame {
 
     private JTextArea bitacora;
 
+    private ArrayList<Descarga> descargas;
+
     public VentanaDescargas() {
 
         setTitle("Descarga Múltiple");
         setSize(450, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+
+        descargas = new ArrayList<Descarga>();
 
         crearComponentes();
     }
@@ -58,6 +66,13 @@ public class VentanaDescargas extends JFrame {
 
         botonCancelar.setEnabled(false);
 
+        botonIniciar.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                iniciarDescargas();
+            }
+        });
+
         JPanel panelBotones = new JPanel();
 
         panelBotones.add(botonIniciar);
@@ -75,5 +90,43 @@ public class VentanaDescargas extends JFrame {
 
         add(panelSuperior, BorderLayout.NORTH);
         add(scroll, BorderLayout.CENTER);
+    }
+
+    public void agregarMensaje(final String mensaje) {
+
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                bitacora.append(mensaje + "\n");
+            }
+        });
+    }
+
+    private void iniciarDescargas() {
+
+        descargas.clear();
+
+        bitacora.setText("");
+
+        botonIniciar.setEnabled(false);
+        botonCancelar.setEnabled(true);
+
+        for (int i = 0; i < TOTAL_ARCHIVOS; i++) {
+
+            barras[i].setValue(0);
+
+            Descarga descarga = new Descarga(
+                    "Archivo " + (i + 1),
+                    barras[i],
+                    this
+            );
+
+            descargas.add(descarga);
+
+            Thread hilo = new Thread(descarga);
+            hilo.start();
+        }
+
+        agregarMensaje("Descargas iniciadas");
     }
 }

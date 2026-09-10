@@ -6,12 +6,14 @@ public class Descarga implements Runnable {
 
     private String nombre;
     private JProgressBar barra;
+    private VentanaDescargas ventana;
     private int pausa;
 
-    public Descarga(String nombre, JProgressBar barra) {
+    public Descarga(String nombre, JProgressBar barra, VentanaDescargas ventana) {
 
         this.nombre = nombre;
         this.barra = barra;
+        this.ventana = ventana;
 
         Random random = new Random();
         pausa = 50 + random.nextInt(151);
@@ -43,6 +45,14 @@ public class Descarga implements Runnable {
             progreso++;
 
             actualizarBarra(progreso);
+
+            if (progreso % 10 == 0 && progreso < 100) {
+                ventana.agregarMensaje(
+                        nombre + ": descarga al " + progreso + "%"
+                );
+            }
         }
+
+        ventana.agregarMensaje(nombre + ": descarga completada");
     }
 }
